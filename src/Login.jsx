@@ -1,13 +1,19 @@
 import {
   GoogleAuthProvider,
+  FacebookAuthProvider,
+  OAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
 
 import { auth } from "./firebase";
-
 import { Timer } from "lucide-react";
 
 export default function Login() {
+
+  // ================================
+  // GOOGLE LOGIN
+  // ================================
+
   async function handleGoogleLogin() {
     try {
       const provider =
@@ -21,6 +27,7 @@ export default function Login() {
         auth,
         provider
       );
+
     } catch (error) {
       console.error(
         "Google sign-in error:",
@@ -33,14 +40,79 @@ export default function Login() {
     }
   }
 
+
+  // ================================
+  // FACEBOOK LOGIN
+  // ================================
+
+  async function handleFacebookLogin() {
+    try {
+      const provider =
+        new FacebookAuthProvider();
+
+      provider.setCustomParameters({
+        display: "popup",
+      });
+
+      await signInWithPopup(
+        auth,
+        provider
+      );
+
+    } catch (error) {
+      console.error(
+        "Facebook sign-in error:",
+        error
+      );
+
+      alert(
+        `${error.code}\n\n${error.message}`
+      );
+    }
+  }
+
+
+  // ================================
+  // APPLE LOGIN
+  // ================================
+
+  async function handleAppleLogin() {
+    try {
+      const provider =
+        new OAuthProvider("apple.com");
+
+      await signInWithPopup(
+        auth,
+        provider
+      );
+
+    } catch (error) {
+      console.error(
+        "Apple sign-in error:",
+        error
+      );
+
+      alert(
+        `${error.code}\n\n${error.message}`
+      );
+    }
+  }
+
+
+  // ================================
+  // LOGIN PAGE
+  // ================================
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#09090b] px-5 text-white">
 
       <div className="w-full max-w-md">
 
+        {/* LOGO */}
+
         <div className="mb-8 text-center">
 
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-black">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-black shadow-lg">
             <Timer size={27} />
           </div>
 
@@ -54,52 +126,128 @@ export default function Login() {
 
         </div>
 
-        <div className="rounded-3xl border border-white/[0.08] bg-[#111113] p-7">
 
-          <button
-            onClick={
-              handleGoogleLogin
-            }
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-5 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-          >
+        {/* LOGIN CARD */}
 
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
+        <div className="rounded-3xl border border-white/[0.08] bg-[#111113] p-7 shadow-2xl">
+
+          <div className="space-y-3">
+
+            {/* GOOGLE */}
+
+            <button
+              onClick={handleGoogleLogin}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-5 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 active:scale-[0.99]"
             >
-              <path
-                fill="#4285F4"
-                d="M21.35 12.23c0-.79-.07-1.55-.2-2.27H12v4.3h5.22a4.46 4.46 0 0 1-1.94 2.92v2.42h3.14c1.84-1.69 2.93-4.18 2.93-7.37z"
-              />
 
-              <path
-                fill="#34A853"
-                d="M12 21.67c2.63 0 4.84-.87 6.45-2.37l-3.14-2.42c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.5A9.74 9.74 0 0 0 12 21.67z"
-              />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="#4285F4"
+                  d="M21.35 12.23c0-.79-.07-1.55-.2-2.27H12v4.3h5.22a4.46 4.46 0 0 1-1.94 2.92v2.42h3.14c1.84-1.69 2.93-4.18 2.93-7.37z"
+                />
 
-              <path
-                fill="#FBBC05"
-                d="M6.54 13.77A5.84 5.84 0 0 1 6.23 12c0-.61.11-1.21.31-1.77v-2.5H3.3A9.74 9.74 0 0 0 2.27 12c0 1.57.38 3.05 1.03 4.27l3.24-2.5z"
-              />
+                <path
+                  fill="#34A853"
+                  d="M12 21.67c2.63 0 4.84-.87 6.45-2.37l-3.14-2.42c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.5A9.74 9.74 0 0 0 12 21.67z"
+                />
 
-              <path
-                fill="#EA4335"
-                d="M12 6.2c1.43 0 2.72.49 3.74 1.45l2.8-2.8C16.83 3.29 14.63 2.33 12 2.33a9.74 9.74 0 0 0-8.7 5.4l3.24 2.5C7.31 7.92 9.46 6.2 12 6.2z"
-              />
-            </svg>
+                <path
+                  fill="#FBBC05"
+                  d="M6.54 13.77A5.84 5.84 0 0 1 6.23 12c0-.61.11-1.21.31-1.77v-2.5H3.3A9.74 9.74 0 0 0 2.27 12c0 1.57.38 3.05 1.03 4.27l3.24-2.5z"
+                />
 
-            Continue with Google
+                <path
+                  fill="#EA4335"
+                  d="M12 6.2c1.43 0 2.72.49 3.74 1.45l2.8-2.8C16.83 3.29 14.63 2.33 12 2.33a9.74 9.74 0 0 0-8.7 5.4l3.24 2.5C7.31 7.92 9.46 6.2 12 6.2z"
+                />
+              </svg>
 
-          </button>
+              Continue with Google
 
-          <p className="mt-5 text-center text-xs leading-5 text-zinc-600">
-            Your tasks, sessions and
-            progress will be saved to
-            your account.
+            </button>
+
+
+            {/* FACEBOOK */}
+
+            <button
+              onClick={handleFacebookLogin}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#1877F2] px-5 py-3.5 text-sm font-medium text-white transition hover:bg-[#166FE5] active:scale-[0.99]"
+            >
+
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="white"
+              >
+                <path d="M24 12.07C24 5.42 18.63 0 12 0S0 5.42 0 12.07C0 18.1 4.39 23.08 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.03 1.79-4.72 4.58-4.72 1.33 0 2.72.24 2.72.24v3.01h-1.53c-1.51 0-1.98.94-1.98 1.9v2.23h3.37l-.54 3.49h-2.83V24C19.61 23.08 24 18.1 24 12.07z" />
+              </svg>
+
+              Continue with Facebook
+
+            </button>
+
+
+            {/* APPLE */}
+
+            <button
+              onClick={handleAppleLogin}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-5 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 active:scale-[0.99]"
+            >
+
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="black"
+              >
+                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.09.81 1.2-.24 2.35-.93 3.63-.84 1.54.12 2.7.73 3.46 1.84-3.18 1.9-2.43 6.1.49 7.27-.58 1.52-1.35 3.01-2.67 3.89zM12.03 7.25C11.88 4.99 13.71 3.13 15.87 3c.3 2.61-2.35 4.55-3.84 4.25z" />
+              </svg>
+
+              Continue with Apple
+
+            </button>
+
+          </div>
+
+
+          {/* DIVIDER */}
+
+          <div className="my-6 flex items-center gap-4">
+
+            <div className="h-px flex-1 bg-white/[0.07]" />
+
+            <span className="text-[10px] uppercase tracking-widest text-zinc-700">
+              Secure sign in
+            </span>
+
+            <div className="h-px flex-1 bg-white/[0.07]" />
+
+          </div>
+
+
+          {/* DESCRIPTION */}
+
+          <p className="text-center text-xs leading-5 text-zinc-600">
+            Your tasks, study sessions,
+            statistics and progress will
+            be securely saved to your
+            FocusFlow account.
           </p>
 
         </div>
+
+
+        {/* FOOTER */}
+
+        <p className="mt-6 text-center text-[11px] text-zinc-700">
+          By continuing, you agree to
+          use FocusFlow responsibly.
+        </p>
 
       </div>
 
