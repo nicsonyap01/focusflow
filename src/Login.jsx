@@ -1,7 +1,6 @@
 import {
   GoogleAuthProvider,
   FacebookAuthProvider,
-  OAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
 
@@ -9,25 +8,19 @@ import { auth } from "./firebase";
 import { Timer } from "lucide-react";
 
 export default function Login() {
-
   // ================================
   // GOOGLE LOGIN
   // ================================
 
   async function handleGoogleLogin() {
     try {
-      const provider =
-        new GoogleAuthProvider();
+      const provider = new GoogleAuthProvider();
 
       provider.setCustomParameters({
         prompt: "select_account",
       });
 
-      await signInWithPopup(
-        auth,
-        provider
-      );
-
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error(
         "Google sign-in error:",
@@ -39,7 +32,6 @@ export default function Login() {
       );
     }
   }
-
 
   // ================================
   // FACEBOOK LOGIN
@@ -54,11 +46,7 @@ export default function Login() {
         display: "popup",
       });
 
-      await signInWithPopup(
-        auth,
-        provider
-      );
-
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error(
         "Facebook sign-in error:",
@@ -71,34 +59,6 @@ export default function Login() {
     }
   }
 
-
-  // ================================
-  // APPLE LOGIN
-  // ================================
-
-  async function handleAppleLogin() {
-    try {
-      const provider =
-        new OAuthProvider("apple.com");
-
-      await signInWithPopup(
-        auth,
-        provider
-      );
-
-    } catch (error) {
-      console.error(
-        "Apple sign-in error:",
-        error
-      );
-
-      alert(
-        `${error.code}\n\n${error.message}`
-      );
-    }
-  }
-
-
   // ================================
   // LOGIN PAGE
   // ================================
@@ -108,7 +68,7 @@ export default function Login() {
 
       <div className="w-full max-w-md">
 
-        {/* LOGO */}
+        {/* LOGO + TITLE */}
 
         <div className="mb-8 text-center">
 
@@ -126,14 +86,13 @@ export default function Login() {
 
         </div>
 
-
         {/* LOGIN CARD */}
 
         <div className="rounded-3xl border border-white/[0.08] bg-[#111113] p-7 shadow-2xl">
 
           <div className="space-y-3">
 
-            {/* GOOGLE */}
+            {/* GOOGLE BUTTON */}
 
             <button
               onClick={handleGoogleLogin}
@@ -170,8 +129,7 @@ export default function Login() {
 
             </button>
 
-
-            {/* FACEBOOK */}
+            {/* FACEBOOK BUTTON */}
 
             <button
               onClick={handleFacebookLogin}
@@ -191,29 +149,7 @@ export default function Login() {
 
             </button>
 
-
-            {/* APPLE */}
-
-            <button
-              onClick={handleAppleLogin}
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-5 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 active:scale-[0.99]"
-            >
-
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="black"
-              >
-                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.09.81 1.2-.24 2.35-.93 3.63-.84 1.54.12 2.7.73 3.46 1.84-3.18 1.9-2.43 6.1.49 7.27-.58 1.52-1.35 3.01-2.67 3.89zM12.03 7.25C11.88 4.99 13.71 3.13 15.87 3c.3 2.61-2.35 4.55-3.84 4.25z" />
-              </svg>
-
-              Continue with Apple
-
-            </button>
-
           </div>
-
 
           {/* DIVIDER */}
 
@@ -229,7 +165,6 @@ export default function Login() {
 
           </div>
 
-
           {/* DESCRIPTION */}
 
           <p className="text-center text-xs leading-5 text-zinc-600">
@@ -240,7 +175,6 @@ export default function Login() {
           </p>
 
         </div>
-
 
         {/* FOOTER */}
 
