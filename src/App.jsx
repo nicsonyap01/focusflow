@@ -61,8 +61,7 @@ const DURATIONS = [25, 50, 90];
 function getTodayKey() {
   const date = new Date();
 
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear();
 
   const month = String(
     date.getMonth() + 1
@@ -80,8 +79,7 @@ function formatTime(seconds) {
     seconds / 60
   );
 
-  const secs =
-    seconds % 60;
+  const secs = seconds % 60;
 
   return `${String(minutes).padStart(
     2,
@@ -101,8 +99,7 @@ function formatMinutes(minutes) {
     minutes / 60
   );
 
-  const mins =
-    minutes % 60;
+  const mins = minutes % 60;
 
   if (mins === 0) {
     return `${hours}h`;
@@ -119,8 +116,7 @@ function playCompletionSound() {
 
     if (!AudioContext) return;
 
-    const context =
-      new AudioContext();
+    const context = new AudioContext();
 
     const oscillator =
       context.createOscillator();
@@ -908,6 +904,7 @@ export default function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#09090b] text-white">
         <div className="text-center">
+
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black">
             <Timer size={22} />
           </div>
@@ -915,6 +912,7 @@ export default function App() {
           <p className="text-sm text-zinc-500">
             Loading FocusFlow...
           </p>
+
         </div>
       </div>
     );
@@ -928,6 +926,7 @@ export default function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#09090b] text-white">
         <div className="text-center">
+
           <Timer
             size={28}
             className="mx-auto mb-4 animate-pulse"
@@ -936,6 +935,7 @@ export default function App() {
           <p className="text-sm text-zinc-500">
             Loading your study space...
           </p>
+
         </div>
       </div>
     );
@@ -1096,6 +1096,7 @@ export default function App() {
           <header className="flex items-center justify-between border-b border-white/[0.07] px-5 py-5 md:px-10">
 
             <div>
+
               <p className="text-xs text-zinc-600">
                 FOCUSFLOW
               </p>
@@ -1103,11 +1104,13 @@ export default function App() {
               <h1 className="mt-1 text-lg font-semibold">
                 {page}
               </h1>
+
             </div>
 
             <div className="flex items-center gap-3">
 
               <div className="hidden text-right sm:block">
+
                 <p className="text-sm font-medium">
                   {user.displayName ||
                     "User"}
@@ -1116,6 +1119,7 @@ export default function App() {
                 <p className="text-xs text-zinc-600">
                   {user.email}
                 </p>
+
               </div>
 
               {user.photoURL ? (
@@ -1164,6 +1168,7 @@ export default function App() {
                   setPage(
                     "Focus Timer"
                   );
+
                   setRunning(
                     true
                   );
@@ -1397,6 +1402,27 @@ function Dashboard({
   onStart,
   onTasks,
 }) {
+  /*
+   * AUTOMATIC GREETING
+   *
+   * Before 12:00 PM  → Good morning
+   * 12:00 PM–5:59 PM → Good afternoon
+   * 6:00 PM onwards  → Good evening
+   */
+
+  const currentHour =
+    new Date().getHours();
+
+  let greeting;
+
+  if (currentHour < 12) {
+    greeting = "Good morning";
+  } else if (currentHour < 18) {
+    greeting = "Good afternoon";
+  } else {
+    greeting = "Good evening";
+  }
+
   const incomplete =
     tasks.filter(
       (task) =>
@@ -1406,13 +1432,15 @@ function Dashboard({
   return (
     <>
       <div className="mb-8">
+
         <p className="text-sm text-zinc-500">
-          Good afternoon 👋
+          {greeting} 👋
         </p>
 
         <h2 className="mt-1 text-3xl font-semibold">
           Ready to focus?
         </h2>
+
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1508,6 +1536,7 @@ function Dashboard({
             </div>
 
             <div>
+
               <p className="text-xs text-zinc-600">
                 CURRENT STREAK
               </p>
@@ -1515,6 +1544,7 @@ function Dashboard({
               <p className="text-lg font-semibold">
                 {streak} days
               </p>
+
             </div>
 
           </div>
@@ -1556,6 +1586,7 @@ function Dashboard({
         <div className="mb-5 flex items-center justify-between">
 
           <div>
+
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
               TODAY
             </p>
@@ -1563,6 +1594,7 @@ function Dashboard({
             <h3 className="mt-1 text-lg font-semibold">
               Upcoming tasks
             </h3>
+
           </div>
 
           <button
@@ -1589,6 +1621,7 @@ function Dashboard({
                   key={task.id}
                   className="rounded-2xl border border-white/[0.05] bg-white/[0.025] p-4"
                 >
+
                   <p className="text-sm font-medium">
                     {task.title}
                   </p>
@@ -1597,6 +1630,7 @@ function Dashboard({
                     {task.subject} ·{" "}
                     {task.minutes} min
                   </p>
+
                 </div>
               ))}
 
@@ -1840,6 +1874,7 @@ function TasksPage({
             }
             className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 text-sm outline-none"
           >
+
             {SUBJECTS.map(
               (item) => (
                 <option
@@ -1851,14 +1886,18 @@ function TasksPage({
                 </option>
               )
             )}
+
           </select>
 
           <button
             onClick={addTask}
             className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-medium text-black"
           >
+
             <Plus size={16} />
+
             Add task
+
           </button>
 
         </div>
@@ -1904,7 +1943,9 @@ function TasksPage({
                       : "border-white/20 text-transparent"
                   }`}
                 >
+
                   <Check size={13} />
+
                 </button>
 
                 <div className="min-w-0 flex-1">
@@ -1947,7 +1988,9 @@ function TasksPage({
                   }
                   className="text-zinc-700 hover:text-red-400"
                 >
+
                   <Trash2 size={15} />
+
                 </button>
 
               </div>
@@ -1983,6 +2026,7 @@ function StatisticsPage({
   return (
     <>
       <div className="mb-8">
+
         <p className="text-sm text-zinc-500">
           Understand your study habits
         </p>
@@ -1990,6 +2034,7 @@ function StatisticsPage({
         <h2 className="mt-1 text-3xl font-semibold">
           Statistics
         </h2>
+
       </div>
 
       <div className="mb-6 grid gap-4 md:grid-cols-3">
@@ -2048,6 +2093,7 @@ function StatisticsPage({
                   key={item.date}
                   className="flex h-full flex-1 flex-col items-center justify-end gap-3"
                 >
+
                   <span className="text-[10px] text-zinc-600">
                     {item.minutes > 0
                       ? `${item.minutes}m`
@@ -2068,6 +2114,7 @@ function StatisticsPage({
                   <span className="text-xs text-zinc-600">
                     {item.day}
                   </span>
+
                 </div>
               );
             }
@@ -2153,13 +2200,16 @@ function HistoryPage({
                 <div className="flex items-center gap-3">
 
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05]">
+
                     <BookOpen
                       size={16}
                       className="text-zinc-500"
                     />
+
                   </div>
 
                   <div>
+
                     <p className="text-sm font-medium">
                       {session.subject}
                     </p>
@@ -2167,6 +2217,7 @@ function HistoryPage({
                     <p className="text-xs text-zinc-600">
                       {session.dateKey}
                     </p>
+
                   </div>
 
                 </div>
@@ -2259,12 +2310,14 @@ function SettingsPage({
           title="Completion sound"
           description="Play a sound when a focus session ends."
         >
+
           <Toggle
             enabled={sound}
             onClick={
               toggleSound
             }
           />
+
         </SettingCard>
 
         <SettingCard
@@ -2272,12 +2325,14 @@ function SettingsPage({
           title="Auto-start next session"
           description="Automatically begin another session after completion."
         >
+
           <Toggle
             enabled={autoStart}
             onClick={
               toggleAutoStart
             }
           />
+
         </SettingCard>
 
         <SettingCard
@@ -2285,9 +2340,11 @@ function SettingsPage({
           title="Appearance"
           description="FocusFlow currently uses its dark interface."
         >
+
           <div className="rounded-xl border border-white/[0.08] px-4 py-2 text-sm text-zinc-500">
             Dark
           </div>
+
         </SettingCard>
 
         <SettingCard
@@ -2295,12 +2352,14 @@ function SettingsPage({
           title="Account"
           description="Sign out of your FocusFlow account."
         >
+
           <button
             onClick={onLogout}
             className="rounded-xl border border-white/[0.08] px-4 py-2 text-sm text-zinc-400 hover:bg-white/[0.05] hover:text-white"
           >
             Sign out
           </button>
+
         </SettingCard>
 
       </div>
@@ -2309,7 +2368,7 @@ function SettingsPage({
 }
 
 /* =========================================================
-   COMPONENTS
+   REUSABLE COMPONENTS
 ========================================================= */
 
 function SidebarItem({
@@ -2364,11 +2423,13 @@ function StatCard({
     <div className="rounded-2xl border border-white/[0.07] bg-[#111113] p-5">
 
       <div className="mb-4 flex items-center gap-2 text-zinc-600">
+
         {icon}
 
         <span className="text-xs">
           {label}
         </span>
+
       </div>
 
       <div className="text-2xl font-semibold">
@@ -2431,6 +2492,7 @@ function Toggle({
           : "bg-white/[0.10]"
       }`}
     >
+
       <span
         className={`absolute top-1 h-5 w-5 rounded-full ${
           enabled
@@ -2438,6 +2500,7 @@ function Toggle({
             : "left-1 bg-zinc-500"
         }`}
       />
+
     </button>
   );
 }
