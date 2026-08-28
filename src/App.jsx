@@ -392,7 +392,31 @@ export default function App() {
         }
       );
 
-      setStudyRoom({ code });
+      setStudyRoom({
+        code,
+        name: roomNameInput.trim() || "Study Room",
+        subject: roomSubjectInput,
+        hostId: user.uid,
+        hostName: user.displayName || "Student",
+        members: {
+          [user.uid]: {
+            name: user.displayName || "Student",
+            photoURL: user.photoURL || "",
+            joinedAt: Date.now(),
+          },
+        },
+        timer: {
+          duration: sharedDuration,
+          running: false,
+          remaining: sharedDuration * 60,
+          endAt: null,
+        },
+        music: {
+          playing: false,
+          trackId: sharedMusicTrack || "focus-1",
+          startedAt: null,
+        },
+      });
       setRoomNameInput("");
       setPage("Study Together");
 
@@ -465,7 +489,19 @@ export default function App() {
         }
       );
 
-      setStudyRoom({ code });
+      const roomData = snapshot.data();
+      setStudyRoom({
+        ...roomData,
+        code,
+        members: {
+          ...(roomData.members || {}),
+          [user.uid]: {
+            name: user.displayName || "Student",
+            photoURL: user.photoURL || "",
+            joinedAt: Date.now(),
+          },
+        },
+      });
       setRoomCodeInput("");
       setPage("Study Together");
 
@@ -3399,7 +3435,9 @@ function StudyTogetherPage({
 }) {
   if (
     !studyRoom ||
-    typeof studyRoom === "string"
+    typeof studyRoom === "string" ||
+    !studyRoom.code ||
+    !studyRoom.members
   ) {
     return (
       <>
