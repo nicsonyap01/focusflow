@@ -392,7 +392,7 @@ export default function App() {
         }
       );
 
-      setStudyRoom(code);
+      setStudyRoom({ code });
       setRoomNameInput("");
       setPage("Study Together");
 
@@ -465,7 +465,7 @@ export default function App() {
         }
       );
 
-      setStudyRoom(code);
+      setStudyRoom({ code });
       setRoomCodeInput("");
       setPage("Study Together");
 
@@ -517,7 +517,10 @@ export default function App() {
           const data =
             snapshot.data();
 
-          setStudyRoom(data);
+          setStudyRoom({
+            ...data,
+            code: data.code || code,
+          });
 
           const timer =
             data.timer || {};
@@ -2143,6 +2146,7 @@ export default function App() {
                 setSharedDuration={setSharedDuration}
                 sharedMusic={sharedMusic}
                 sharedMusicTrack={sharedMusicTrack}
+                sharedAudioRef={sharedAudioRef}
                 onChangeMusicTrack={changeSharedMusicTrack}
                 roomLoading={roomLoading}
                 onCreateRoom={createStudyRoom}
@@ -2194,6 +2198,12 @@ export default function App() {
         </main>
 
       </div>
+
+      <footer className="border-t border-white/[0.07] px-5 py-6 text-center">
+        <p className="text-xs text-zinc-600">
+          Created by <span className="text-zinc-400">Nicson Yap</span>
+        </p>
+      </footer>
 
       {/* MOBILE NAV */}
 
@@ -3373,6 +3383,7 @@ function StudyTogetherPage({
   setSharedDuration,
   sharedMusic,
   sharedMusicTrack,
+  sharedAudioRef,
   onChangeMusicTrack,
   roomLoading,
   onCreateRoom,
