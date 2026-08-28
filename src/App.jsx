@@ -67,6 +67,24 @@ const SUBJECTS = [
 
 const DURATIONS = [25, 50, 90];
 
+const STUDY_TRACKS = [
+  {
+    id: "focus-1",
+    name: "Focus Flow",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  },
+  {
+    id: "focus-2",
+    name: "Deep Focus",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+  },
+  {
+    id: "focus-3",
+    name: "Calm Study",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+  },
+];
+
 function getTodayKey() {
   const date = new Date();
 
@@ -263,6 +281,8 @@ export default function App() {
   const [sharedRunning, setSharedRunning] = useState(false);
   const [sharedDuration, setSharedDuration] = useState(50);
   const [sharedMusic, setSharedMusic] = useState(false);
+  const [sharedMusicTrack, setSharedMusicTrack] = useState("focus-1");
+  const sharedAudioRef = useRef(null);
   const [roomLoading, setRoomLoading] = useState(false);
   const previousSharedSecondsRef = useRef(0);
 
@@ -546,6 +566,10 @@ export default function App() {
               data.music?.playing
             )
           );
+
+          setSharedMusicTrack(
+            data.music?.trackId || "focus-1"
+          );
         },
         (error) => {
           console.error(
@@ -796,13 +820,15 @@ export default function App() {
     );
   }
 
-  async function toggleSharedMusic() {
+  async function toggleSharedMusic(trackId = sharedMusicTrack) {
     if (
       !user ||
       !studyRoom?.code
     ) {
       return;
     }
+
+    const nextPlaying = !sharedMusic;
 
     await updateDoc(
       doc(
@@ -811,15 +837,64 @@ export default function App() {
         studyRoom.code
       ),
       {
-        "music.playing":
-          !sharedMusic,
-        "music.startedAt":
-          !sharedMusic
-            ? serverTimestamp()
-            : null,
+        "music.playing": nextPlaying,
+        "music.trackId": trackId,
+        "music.startedAt": nextPlaying
+          ? serverTimestamp()
+          : null,
       }
     );
   }
+
+  async function changeSharedMusicTrack(trackId) {
+    if (!user || !studyRoom?.code) return;
+
+    setSharedMusicTrack(trackId);
+
+    await updateDoc(
+      doc(db, "studyRooms", studyRoom.code),
+      {
+        "music.trackId": trackId,
+        "music.playing": true,
+        "music.startedAt": serverTimestamp(),
+      }
+    );
+  }
+
+  useEffect(() => {
+    if (!studyRoom || typeof studyRoom !== "object") return;
+
+    const track = STUDY_TRACKS.find(
+      (item) => item.id === sharedMusicTrack
+    ) || STUDY_TRACKS[0];
+
+    const audio = sharedAudioRef.current;
+    if (!audio) return;
+
+    if (audio.src !== track.url) {
+      audio.src = track.url;
+      audio.load();
+    }
+
+    const startedAt = studyRoom.music?.startedAt?.toMillis?.();
+
+    if (sharedMusic && startedAt) {
+      const elapsed = Math.max(0, (Date.now() - startedAt) / 1000);
+      const sync = () => {
+        try {
+          if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            audio.currentTime = elapsed % audio.duration;
+          }
+          audio.play().catch(() => {});
+        } catch {}
+      };
+
+      if (audio.readyState >= 1) sync();
+      else audio.addEventListener("loadedmetadata", sync, { once: true });
+    } else {
+      audio.pause();
+    }
+  }, [studyRoom, sharedMusic, sharedMusicTrack]);
 
   async function sendRoomMessage() {
     const body =
@@ -2067,6 +2142,8 @@ export default function App() {
                 sharedDuration={sharedDuration}
                 setSharedDuration={setSharedDuration}
                 sharedMusic={sharedMusic}
+                sharedMusicTrack={sharedMusicTrack}
+                onChangeMusicTrack={changeSharedMusicTrack}
                 roomLoading={roomLoading}
                 onCreateRoom={createStudyRoom}
                 onJoinRoom={joinStudyRoom}
@@ -3295,6 +3372,8 @@ function StudyTogetherPage({
   sharedDuration,
   setSharedDuration,
   sharedMusic,
+  sharedMusicTrack,
+  onChangeMusicTrack,
   roomLoading,
   onCreateRoom,
   onJoinRoom,
@@ -3631,9 +3710,25 @@ function StudyTogetherPage({
 
               </div>
 
-              <button
-                onClick={onToggleMusic}
-                className={`rounded-xl px-4 py-2 text-xs font-medium ${
+              <div className="flex items-center gap-2">
+
+                <select
+                  value={sharedMusicTrack}
+                  onChange={(e) =>
+                    onChangeMusicTrack(e.target.value)
+                  }
+                  className="rounded-xl border border-white/[0.08] bg-[#111113] px-3 py-2 text-xs"
+                >
+                  {STUDY_TRACKS.map((track) => (
+                    <option key={track.id} value={track.id}>
+                      {track.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={onToggleMusic}
+                  className={`rounded-xl px-4 py-2 text-xs font-medium ${
                   sharedMusic
                     ? "bg-white text-black"
                     : "border border-white/[0.08] text-zinc-400"
@@ -3643,6 +3738,15 @@ function StudyTogetherPage({
                   ? "Playing"
                   : "Play"}
               </button>
+
+              </div>
+
+              <audio
+                ref={sharedAudioRef}
+                preload="metadata"
+                loop
+                className="hidden"
+              />
 
             </div>
 
