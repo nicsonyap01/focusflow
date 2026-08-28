@@ -14,6 +14,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   setDoc,
   updateDoc,
@@ -33,6 +34,13 @@ import {
   History,
   LayoutDashboard,
   Moon,
+  Sun,
+  Users,
+  User,
+  MessageCircle,
+  Copy,
+  LogIn,
+  Share2,
   Pause,
   Play,
   RotateCcw,
@@ -201,6 +209,200 @@ export default function App() {
     useState("Dashboard");
 
   /* =====================================================
+     THEME
+  ===================================================== */
+
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("focusflow-theme") !== "light";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("focusflow-theme", darkMode ? "dark" : "light");
+    document.documentElement.classList.toggle("focusflow-light", !darkMode);
+  }, [darkMode]);
+
+  /* =====================================================
+     SOCIAL / PROFILE
+  ===================================================== */
+
+  const [studyRoom, setStudyRoom] = useState(null);
+  const [roomCodeInput, setRoomCodeInput] = useState("");
+  const [roomName, setRoomName] = useState("Study Session");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatText, setChatText] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [profileBio, setProfileBio] = useState("");
+  const [socialLoading, setSocialLoading] = useState(false);
+
+  /* =====================================================
+     THEME / PROFILE / STUDY TOGETHER
+  ===================================================== */
+
+  async function toggleTheme() {
+    const next = !darkMode;
+    setDarkMode(next);
+    if (!user) return;
+    try {
+      await setDoc(
+        doc(db, "users", user.uid, "settings", "preferences"),
+        { darkMode: next },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Could not save theme:", error);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    setProfileName(user.displayName || "");
+    const profileRef = doc(db, "users", user.uid);
+    return onSnapshot(profileRef, (snapshot) => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.data();
+      if (typeof data.name === "string") setProfileName(data.name);
+      if (typeof data.bio === "string") setProfileBio(data.bio);
+    });
+  }, [user]);
+
+  async function saveProfile() {
+    if (!user) return;
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          name: profileName.trim() || user.displayName || "User",
+          bio: profileBio.trim(),
+          email: user.email || "",
+          photoURL: user.photoURL || "",
+        },
+        { merge: true }
+      );
+      alert("Profile saved.");
+    } catch (error) {
+      console.error("Could not save profile:", error);
+      alert("Could not save profile.");
+    }
+  }
+
+  function generateRoomCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i += 1) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
+
+  async function createStudyRoom() {
+    if (!user) return;
+    setSocialLoading(true);
+    try {
+      const code = generateRoomCode();
+      const member = {
+        uid: user.uid,
+        name: profileName || user.displayName || "User",
+        photoURL: user.photoURL || "",
+      };
+      const room = {
+        code,
+        name: roomName.trim() || "Study Session",
+        hostId: user.uid,
+        createdAt: serverTimestamp(),
+        members: { [user.uid]: member },
+      };
+      await setDoc(doc(db, "studyRooms", code), room);
+      setStudyRoom({ ...room, id: code });
+      setRoomCodeInput(code);
+    } catch (error) {
+      console.error("Could not create study room:", error);
+      alert("Could not create study room.");
+    } finally {
+      setSocialLoading(false);
+    }
+  }
+
+  async function joinStudyRoom() {
+    if (!user) return;
+    const code = roomCodeInput.trim().toUpperCase();
+    if (code.length !== 6) {
+      alert("Enter a valid 6-character study code.");
+      return;
+    }
+    setSocialLoading(true);
+    try {
+      const roomRef = doc(db, "studyRooms", code);
+      const snapshot = await getDoc(roomRef);
+      if (!snapshot.exists()) {
+        alert("Study room not found.");
+        return;
+      }
+      const data = snapshot.data();
+      const member = {
+        uid: user.uid,
+        name: profileName || user.displayName || "User",
+        photoURL: user.photoURL || "",
+      };
+      await updateDoc(roomRef, {
+        [`members.${user.uid}`]: member,
+      });
+      setStudyRoom({ ...data, id: code, members: { ...(data.members || {}), [user.uid]: member } });
+    } catch (error) {
+      console.error("Could not join study room:", error);
+      alert("Could not join study room.");
+    } finally {
+      setSocialLoading(false);
+    }
+  }
+
+  function leaveStudyRoom() {
+    setStudyRoom(null);
+    setChatMessages([]);
+  }
+
+  async function sendChatMessage() {
+    if (!user || !studyRoom || !chatText.trim()) return;
+    try {
+      await addDoc(
+        collection(db, "studyRooms", studyRoom.id, "messages"),
+        {
+          uid: user.uid,
+          name: profileName || user.displayName || "User",
+          text: chatText.trim(),
+          createdAt: serverTimestamp(),
+        }
+      );
+      setChatText("");
+    } catch (error) {
+      console.error("Could not send message:", error);
+      alert("Could not send message.");
+    }
+  }
+
+  useEffect(() => {
+    if (!studyRoom?.id) return;
+    const roomRef = doc(db, "studyRooms", studyRoom.id);
+    const unsubscribeRoom = onSnapshot(roomRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setStudyRoom(null);
+        return;
+      }
+      setStudyRoom({ ...snapshot.data(), id: snapshot.id });
+    });
+    const messagesRef = collection(db, "studyRooms", studyRoom.id, "messages");
+    const unsubscribeMessages = onSnapshot(messagesRef, (snapshot) => {
+      const data = snapshot.docs
+        .map((item) => ({ id: item.id, ...item.data() }))
+        .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+      setChatMessages(data);
+    });
+    return () => {
+      unsubscribeRoom();
+      unsubscribeMessages();
+    };
+  }, [studyRoom?.id]);
+
+  /* =====================================================
      TIMER
   ===================================================== */
 
@@ -354,6 +556,7 @@ export default function App() {
                 dailyGoal: 4,
                 sound: true,
                 autoStart: false,
+                darkMode: true,
               },
               {
                 merge: true,
@@ -405,6 +608,174 @@ export default function App() {
       unsubscribeSettings();
     };
   }, [user]);
+
+  /* =====================================================
+     THEME / PROFILE / STUDY TOGETHER
+  ===================================================== */
+
+  async function toggleTheme() {
+    const next = !darkMode;
+    setDarkMode(next);
+    if (!user) return;
+    try {
+      await setDoc(
+        doc(db, "users", user.uid, "settings", "preferences"),
+        { darkMode: next },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Could not save theme:", error);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    setProfileName(user.displayName || "");
+    const profileRef = doc(db, "users", user.uid);
+    return onSnapshot(profileRef, (snapshot) => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.data();
+      if (typeof data.name === "string") setProfileName(data.name);
+      if (typeof data.bio === "string") setProfileBio(data.bio);
+    });
+  }, [user]);
+
+  async function saveProfile() {
+    if (!user) return;
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          name: profileName.trim() || user.displayName || "User",
+          bio: profileBio.trim(),
+          email: user.email || "",
+          photoURL: user.photoURL || "",
+        },
+        { merge: true }
+      );
+      alert("Profile saved.");
+    } catch (error) {
+      console.error("Could not save profile:", error);
+      alert("Could not save profile.");
+    }
+  }
+
+  function generateRoomCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i += 1) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
+
+  async function createStudyRoom() {
+    if (!user) return;
+    setSocialLoading(true);
+    try {
+      const code = generateRoomCode();
+      const member = {
+        uid: user.uid,
+        name: profileName || user.displayName || "User",
+        photoURL: user.photoURL || "",
+      };
+      const room = {
+        code,
+        name: roomName.trim() || "Study Session",
+        hostId: user.uid,
+        createdAt: serverTimestamp(),
+        members: { [user.uid]: member },
+      };
+      await setDoc(doc(db, "studyRooms", code), room);
+      setStudyRoom({ ...room, id: code });
+      setRoomCodeInput(code);
+    } catch (error) {
+      console.error("Could not create study room:", error);
+      alert("Could not create study room.");
+    } finally {
+      setSocialLoading(false);
+    }
+  }
+
+  async function joinStudyRoom() {
+    if (!user) return;
+    const code = roomCodeInput.trim().toUpperCase();
+    if (code.length !== 6) {
+      alert("Enter a valid 6-character study code.");
+      return;
+    }
+    setSocialLoading(true);
+    try {
+      const roomRef = doc(db, "studyRooms", code);
+      const snapshot = await getDoc(roomRef);
+      if (!snapshot.exists()) {
+        alert("Study room not found.");
+        return;
+      }
+      const data = snapshot.data();
+      const member = {
+        uid: user.uid,
+        name: profileName || user.displayName || "User",
+        photoURL: user.photoURL || "",
+      };
+      await updateDoc(roomRef, {
+        [`members.${user.uid}`]: member,
+      });
+      setStudyRoom({ ...data, id: code, members: { ...(data.members || {}), [user.uid]: member } });
+    } catch (error) {
+      console.error("Could not join study room:", error);
+      alert("Could not join study room.");
+    } finally {
+      setSocialLoading(false);
+    }
+  }
+
+  function leaveStudyRoom() {
+    setStudyRoom(null);
+    setChatMessages([]);
+  }
+
+  async function sendChatMessage() {
+    if (!user || !studyRoom || !chatText.trim()) return;
+    try {
+      await addDoc(
+        collection(db, "studyRooms", studyRoom.id, "messages"),
+        {
+          uid: user.uid,
+          name: profileName || user.displayName || "User",
+          text: chatText.trim(),
+          createdAt: serverTimestamp(),
+        }
+      );
+      setChatText("");
+    } catch (error) {
+      console.error("Could not send message:", error);
+      alert("Could not send message.");
+    }
+  }
+
+  useEffect(() => {
+    if (!studyRoom?.id) return;
+    const roomRef = doc(db, "studyRooms", studyRoom.id);
+    const unsubscribeRoom = onSnapshot(roomRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setStudyRoom(null);
+        return;
+      }
+      setStudyRoom({ ...snapshot.data(), id: snapshot.id });
+    });
+    const messagesRef = collection(db, "studyRooms", studyRoom.id, "messages");
+    const unsubscribeMessages = onSnapshot(messagesRef, (snapshot) => {
+      const data = snapshot.docs
+        .map((item) => ({ id: item.id, ...item.data() }))
+        .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+      setChatMessages(data);
+    });
+    return () => {
+      unsubscribeRoom();
+      unsubscribeMessages();
+    };
+  }, [studyRoom?.id]);
 
   /* =====================================================
      TIMER
@@ -946,7 +1317,27 @@ export default function App() {
   ===================================================== */
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white">
+    <>
+      <style>{`
+        .focusflow-light .bg\-\[\#09090b\] { background:#f6f7f9 !important; }
+        .focusflow-light .bg\-\[\#0d0d0f\] { background:#ffffff !important; }
+        .focusflow-light .bg\-\[\#111113\] { background:#ffffff !important; }
+        .focusflow-light .bg-white\/\[0\.025\] { background:#f1f2f4 !important; }
+        .focusflow-light .bg-white\/\[0\.03\] { background:#f5f6f8 !important; }
+        .focusflow-light .bg-white\/\[0\.04\] { background:#f1f2f4 !important; }
+        .focusflow-light .bg-white\/\[0\.05\] { background:#eef0f2 !important; }
+        .focusflow-light .text-white { color:#18191c !important; }
+        .focusflow-light .text-zinc-400 { color:#555a63 !important; }
+        .focusflow-light .text-zinc-500 { color:#6b7079 !important; }
+        .focusflow-light .text-zinc-600 { color:#8a8f98 !important; }
+        .focusflow-light .text-zinc-700 { color:#a2a6ad !important; }
+        .focusflow-light .border-white\/\[0\.07\] { border-color:#e1e4e8 !important; }
+        .focusflow-light .border-white\/\[0\.08\] { border-color:#dfe2e6 !important; }
+        .focusflow-light .border-white\/10 { border-color:#dfe2e6 !important; }
+        .focusflow-light .bg-white\/\[0\.10\] { background:#dfe2e6 !important; }
+        .focusflow-light .hover\:bg-white\/\[0\.05\]:hover { background:#eef0f2 !important; }
+      `}</style>
+      <div className="min-h-screen bg-[#09090b] text-white">
 
       <div className="flex min-h-screen">
 
@@ -1047,6 +1438,20 @@ export default function App() {
             />
 
           </nav>
+
+          <SidebarItem
+            icon={<Users size={17} />}
+            text="Study Together"
+            active={page === "Study Together"}
+            onClick={() => setPage("Study Together")}
+          />
+
+          <SidebarItem
+            icon={<User size={17} />}
+            text="Profile"
+            active={page === "Profile"}
+            onClick={() => setPage("Profile")}
+          />
 
           <p className="mb-3 mt-8 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
             More
@@ -1265,6 +1670,36 @@ export default function App() {
               />
             )}
 
+            {page === "Study Together" && (
+              <StudyTogetherPage
+                user={user}
+                studyRoom={studyRoom}
+                roomName={roomName}
+                setRoomName={setRoomName}
+                roomCodeInput={roomCodeInput}
+                setRoomCodeInput={setRoomCodeInput}
+                createStudyRoom={createStudyRoom}
+                joinStudyRoom={joinStudyRoom}
+                socialLoading={socialLoading}
+                chatMessages={chatMessages}
+                chatText={chatText}
+                setChatText={setChatText}
+                sendChatMessage={sendChatMessage}
+                leaveStudyRoom={leaveStudyRoom}
+              />
+            )}
+
+            {page === "Profile" && (
+              <ProfilePage
+                user={user}
+                profileName={profileName}
+                setProfileName={setProfileName}
+                profileBio={profileBio}
+                setProfileBio={setProfileBio}
+                saveProfile={saveProfile}
+              />
+            )}
+
             {page === "Settings" && (
               <SettingsPage
                 dailyGoal={
@@ -1286,6 +1721,8 @@ export default function App() {
                 onLogout={
                   handleLogout
                 }
+                darkMode={darkMode}
+                toggleDarkMode={toggleTheme}
               />
             )}
 
@@ -1384,6 +1821,7 @@ export default function App() {
       </div>
 
     </div>
+    </>
   );
 }
 
@@ -2199,6 +2637,15 @@ function HistoryPage({
 
                 <div className="flex items-center gap-3">
 
+               <button
+                 onClick={toggleTheme}
+                 title={darkMode ? "Switch to bright theme" : "Switch to dark theme"}
+                 className="flex h-9 items-center gap-2 rounded-xl border border-white/[0.08] px-3 text-xs text-zinc-400 hover:bg-white/[0.05]"
+               >
+                 {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+                 <span className="hidden sm:inline">{darkMode ? "Bright" : "Dark"}</span>
+               </button>
+
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05]">
 
                     <BookOpen
@@ -2248,6 +2695,8 @@ function SettingsPage({
   autoStart,
   toggleAutoStart,
   onLogout,
+  darkMode,
+  toggleDarkMode,
 }) {
   return (
     <>
@@ -2336,14 +2785,20 @@ function SettingsPage({
         </SettingCard>
 
         <SettingCard
-          icon={<Moon size={18} />}
+          icon={darkMode ? <Moon size={18} /> : <Sun size={18} />}
           title="Appearance"
-          description="FocusFlow currently uses its dark interface."
+          description="Switch between dark and bright themes."
         >
 
-          <div className="rounded-xl border border-white/[0.08] px-4 py-2 text-sm text-zinc-500">
-            Dark
-          </div>
+          <button
+            onClick={toggleDarkMode}
+            className={`relative h-7 w-12 rounded-full ${darkMode ? "bg-white" : "bg-zinc-300"}`}
+            aria-label="Toggle theme"
+          >
+            <span
+              className={`absolute top-1 h-5 w-5 rounded-full transition-all ${darkMode ? "left-6 bg-black" : "left-1 bg-white"}`}
+            />
+          </button>
 
         </SettingCard>
 
@@ -2362,6 +2817,211 @@ function SettingsPage({
 
         </SettingCard>
 
+      </div>
+    </>
+  );
+}
+
+/* =========================================================
+   STUDY TOGETHER
+========================================================= */
+
+function StudyTogetherPage({
+  user,
+  studyRoom,
+  roomName,
+  setRoomName,
+  roomCodeInput,
+  setRoomCodeInput,
+  createStudyRoom,
+  joinStudyRoom,
+  socialLoading,
+  chatMessages,
+  chatText,
+  setChatText,
+  sendChatMessage,
+  leaveStudyRoom,
+}) {
+  const members = Object.values(studyRoom?.members || {});
+
+  async function copyCode() {
+    if (!studyRoom?.code) return;
+    try {
+      await navigator.clipboard.writeText(studyRoom.code);
+      alert("Study code copied.");
+    } catch {
+      alert(`Study code: ${studyRoom.code}`);
+    }
+  }
+
+  return (
+    <>
+      <div className="mb-8">
+        <p className="text-sm text-zinc-500">Study with others</p>
+        <h2 className="mt-1 text-3xl font-semibold">Study Together</h2>
+      </div>
+
+      {!studyRoom ? (
+        <div className="grid max-w-5xl gap-5 lg:grid-cols-2">
+          <div className="rounded-3xl border border-white/[0.07] bg-[#111113] p-6">
+            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-black">
+              <Users size={20} />
+            </div>
+            <h3 className="text-xl font-semibold">Create a study room</h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
+              Generate a private code and invite your friends to study together.
+            </p>
+            <input
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+              placeholder="Room name"
+              className="mt-6 w-full rounded-xl border border-white/[0.08] bg-transparent px-4 py-3 text-sm outline-none placeholder:text-zinc-600"
+            />
+            <button
+              onClick={createStudyRoom}
+              disabled={socialLoading}
+              className="mt-3 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-black disabled:opacity-50"
+            >
+              {socialLoading ? "Creating..." : "Create room"}
+            </button>
+          </div>
+
+          <div className="rounded-3xl border border-white/[0.07] bg-[#111113] p-6">
+            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] text-zinc-300">
+              <LogIn size={20} />
+            </div>
+            <h3 className="text-xl font-semibold">Join a room</h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
+              Enter the 6-character code shared by your study partner.
+            </p>
+            <input
+              value={roomCodeInput}
+              onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().slice(0, 6))}
+              placeholder="ABC123"
+              maxLength={6}
+              className="mt-6 w-full rounded-xl border border-white/[0.08] bg-transparent px-4 py-3 text-center text-lg font-semibold tracking-[0.3em] outline-none placeholder:text-zinc-700"
+            />
+            <button
+              onClick={joinStudyRoom}
+              disabled={socialLoading}
+              className="mt-3 w-full rounded-xl border border-white/[0.1] px-4 py-3 text-sm font-medium hover:bg-white/[0.05] disabled:opacity-50"
+            >
+              {socialLoading ? "Joining..." : "Join room"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid max-w-6xl gap-5 lg:grid-cols-[280px_1fr]">
+          <div className="rounded-3xl border border-white/[0.07] bg-[#111113] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">ROOM</p>
+            <h3 className="mt-2 text-xl font-semibold">{studyRoom.name}</h3>
+            <div className="mt-5 rounded-2xl bg-white/[0.04] p-4 text-center">
+              <p className="text-xs text-zinc-600">STUDY CODE</p>
+              <p className="mt-2 text-2xl font-bold tracking-[0.25em]">{studyRoom.code}</p>
+              <button onClick={copyCode} className="mt-3 inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-white">
+                <Copy size={13} /> Copy code
+              </button>
+            </div>
+            <div className="mt-6">
+              <p className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-600">STUDYING NOW</p>
+              <div className="space-y-2">
+                {members.map((member) => (
+                  <div key={member.uid} className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
+                    {member.photoURL ? (
+                      <img src={member.photoURL} alt="" className="h-8 w-8 rounded-full" />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-semibold text-black">
+                        {(member.name || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="truncate text-sm">{member.name || "User"}</span>
+                    {member.uid === studyRoom.hostId && <span className="ml-auto text-[9px] text-zinc-600">HOST</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button onClick={leaveStudyRoom} className="mt-6 w-full rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm text-zinc-400 hover:bg-white/[0.05]">
+              Leave room
+            </button>
+          </div>
+
+          <div className="flex min-h-[560px] flex-col rounded-3xl border border-white/[0.07] bg-[#111113]">
+            <div className="border-b border-white/[0.07] p-5">
+              <div className="flex items-center gap-2">
+                <MessageCircle size={18} />
+                <h3 className="font-semibold">Room chat</h3>
+              </div>
+              <p className="mt-1 text-xs text-zinc-600">Talk while you study.</p>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto p-5">
+              {chatMessages.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-zinc-600">Start the conversation.</div>
+              ) : chatMessages.map((message) => (
+                <div key={message.id} className={`flex ${message.uid === user?.uid ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.uid === user?.uid ? "bg-white text-black" : "bg-white/[0.05]"}`}>
+                    <p className="mb-1 text-[10px] font-medium opacity-60">{message.name}</p>
+                    <p className="text-sm leading-5">{message.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <form
+              onSubmit={(e) => { e.preventDefault(); sendChatMessage(); }}
+              className="flex gap-2 border-t border-white/[0.07] p-4"
+            >
+              <input
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+                placeholder="Type a message..."
+                className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-transparent px-4 py-3 text-sm outline-none placeholder:text-zinc-600"
+              />
+              <button type="submit" className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-black">Send</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+function ProfilePage({ user, profileName, setProfileName, profileBio, setProfileBio, saveProfile }) {
+  return (
+    <>
+      <div className="mb-8">
+        <p className="text-sm text-zinc-500">Your public study profile</p>
+        <h2 className="mt-1 text-3xl font-semibold">Profile</h2>
+      </div>
+
+      <div className="max-w-2xl rounded-3xl border border-white/[0.07] bg-[#111113] p-6">
+        <div className="flex items-center gap-4">
+          {user?.photoURL ? (
+            <img src={user.photoURL} alt="Profile" className="h-16 w-16 rounded-full border border-white/10" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-semibold text-black">
+              {(profileName || "U").charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <p className="font-semibold">{profileName || "Your name"}</p>
+            <p className="text-sm text-zinc-600">{user?.email}</p>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-5">
+          <div>
+            <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-600">Display name</label>
+            <input value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-transparent px-4 py-3 text-sm outline-none" />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-600">Study bio</label>
+            <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={4} placeholder="Tell other students what you are studying..." className="w-full resize-none rounded-xl border border-white/[0.08] bg-transparent px-4 py-3 text-sm outline-none placeholder:text-zinc-700" />
+          </div>
+          <button onClick={saveProfile} className="rounded-xl bg-white px-5 py-3 text-sm font-medium text-black">Save profile</button>
+        </div>
       </div>
     </>
   );
