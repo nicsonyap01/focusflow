@@ -1,9 +1,64 @@
+/* FocusFlow global/theme layer.
+   App.jsx uses Tailwind utility classes. The Tailwind CDN is loaded
+   from index.html, while this file handles the app-wide base and
+   bright-theme overrides. */
 
-/* FocusFlow Bright Theme
-   Dark mode remains your existing Tailwind design.
-   These rules override the hard-coded dark surfaces
-   when html/body has the bright-mode class. */
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+}
 
+html {
+  background: #09090b;
+}
+
+body {
+  min-height: 100vh;
+  background: #09090b;
+  color: #fff;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.16) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.14);
+  border-radius: 999px;
+}
+
+/* Bright theme */
 html.bright-mode,
 body.bright-mode {
   background: #f5f6f8;
@@ -16,7 +71,7 @@ body.bright-mode {
 
 .bright-mode .bg-\[\#0d0d0f\],
 .bright-mode .bg-\[\#111113\] {
-  background-color: #ffffff !important;
+  background-color: #fff !important;
 }
 
 .bright-mode [class*="bg-white/[0.025]"] {
@@ -33,6 +88,7 @@ body.bright-mode {
 
 .bright-mode [class*="border-white/[0.07]"],
 .bright-mode [class*="border-white/[0.08]"],
+.bright-mode [class*="border-white/[0.05]"],
 .bright-mode [class*="border-white/[0.04]"] {
   border-color: #e1e4e8 !important;
 }
@@ -61,46 +117,31 @@ body.bright-mode {
 .bright-mode textarea,
 .bright-mode select {
   color: #18181b !important;
-  background-color: #ffffff !important;
+  background-color: #fff !important;
   border-color: #dfe2e6 !important;
 }
 
 .bright-mode select option {
   color: #18181b;
-  background: #ffffff;
+  background: #fff;
 }
 
 .bright-mode aside {
-  background-color: #ffffff !important;
+  background-color: #fff !important;
   border-color: #e1e4e8 !important;
 }
 
-.bright-mode .backdrop-blur {
-  background-color: rgba(255, 255, 255, 0.94) !important;
-}
-
-.bright-mode .text-red-400 {
-  color: #dc2626 !important;
-}
-
-/* Keep primary controls high contrast. */
+.bright-mode button.bg-white,
 .bright-mode button.bg-white.text-black,
-.bright-mode button.bg-white {
-  background-color: #18181b !important;
-  color: #ffffff !important;
-}
-
-/* Active sidebar buttons in bright mode. */
 .bright-mode .bg-white.text-black {
   background-color: #18181b !important;
-  color: #ffffff !important;
+  color: #fff !important;
 }
 
-/* Smooth theme transition. */
 body,
 body * {
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
+    background-color .2s ease,
+    border-color .2s ease,
+    color .2s ease;
 }
