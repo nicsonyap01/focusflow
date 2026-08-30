@@ -57,6 +57,80 @@ import {
   LogOut,
 } from "lucide-react";
 
+
+class FocusFlowErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("FocusFlow render error:", error, info);
+  }
+
+  handleReload = () => {
+    window.location.reload();
+  };
+
+  handleBack = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div className="min-h-screen bg-[#09090b] text-white flex items-center justify-center p-6">
+        <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#111113] p-7 shadow-2xl">
+          <div className="mb-5 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+              !
+            </div>
+            <h1 className="text-xl font-semibold">Study Together ran into a problem</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              Your other FocusFlow data is safe. The room screen failed to render.
+            </p>
+          </div>
+
+          <details className="mb-5 rounded-xl border border-white/10 bg-black/20 p-4">
+            <summary className="cursor-pointer text-sm text-zinc-300">
+              Technical details
+            </summary>
+            <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap break-words text-xs text-zinc-500">
+              {this.state.error?.message || "Unknown rendering error"}
+            </pre>
+          </details>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={this.handleBack}
+              className="flex-1 rounded-xl border border-white/10 px-4 py-3 text-sm text-zinc-300 hover:bg-white/5"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={this.handleReload}
+              className="flex-1 rounded-xl bg-white px-4 py-3 text-sm font-medium text-black hover:bg-zinc-200"
+            >
+              Reload
+            </button>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-zinc-600">
+            Created by Nicson Yap
+          </p>
+        </div>
+      </div>
+    );
+  }
+}
+
 const SUBJECTS = [
   "Physics",
   "Mathematics",
@@ -170,7 +244,7 @@ function playCompletionSound() {
   }
 }
 
-export default function App() {
+function FocusFlowApp() {
   /* =====================================================
      AUTH
   ===================================================== */
@@ -4088,5 +4162,13 @@ function Toggle({
       />
 
     </button>
+  );
+}
+
+export default function App() {
+  return (
+    <FocusFlowErrorBoundary>
+      <FocusFlowApp />
+    </FocusFlowErrorBoundary>
   );
 }
